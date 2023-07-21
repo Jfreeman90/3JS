@@ -1,0 +1,119 @@
+{
+    "level":"1",
+    "difficulty": "easy",
+    "description":"DESCRIPTION_PLACEHOLDER",
+    "blockCount": 6,
+    "scene":{
+        "cameraPosition": {
+            "x": 13,
+            "y": 17,
+            "z":30
+        },
+        "cameraDirection":{
+            "x": 0,
+            "y": 10,
+            "z":0
+        },
+        "pointLightPosition": {
+            "x": -7,
+            "y": 12,
+            "z":-7
+        },
+        "ambientLight": true,
+        "gravity" : -9.81,
+        "timeStep" : 0.016,
+        "background" : "x0FFFFFF",
+        "weather" :"WEATHER_PLACEHOLDER_INFO"
+    },
+    "ground": {
+        "mesh": "MESH_PLACEHOLDER",
+        "dimensions":{
+            "width": 10,
+            "height":10,
+            "depth":0.1
+        },
+        "position": {
+            "x": 0,
+            "y": 0,
+            "z":0
+        },
+        "color": "#221021",
+        "texture": "TEXTURE_PLACEHOLDER",
+        "stationary": true,
+        "movement":{
+            "moving" :false,
+            "movementVelocies":{
+                "x":0,
+                "y":0,
+                "z":0
+            }
+        },
+        "rotation" : {
+            "rotating": false,
+            "defaultRotatingSpeed": 0
+        },
+        "friction":0.06,
+        "restitution": 0.2
+    },
+    "heightChecker":{
+        "mesh":"MESH_PLACEHOLDER",
+        "dimensions":{
+            "width": 2,
+            "height": 2,
+            "depth":2
+        },
+        "position": {
+            "x": 2,
+            "y": 2,
+            "z":2
+        },
+        "friction":0.1
+    },
+    "blocks":[
+        {
+        "dimensions":{
+            "width": 2,
+            "height": 2,
+            "depth":2
+        },
+        "position": {
+            "x": 0,
+            "y": 12,
+            "z":0
+        },
+        "name": "Box",
+        "color":"#006600",
+        "texture": "texture",
+        "mass": 8,
+        "angularDamping" :0.8
+        },
+        {
+        "dimensions":{
+            "width": 3,
+            "height": 3,
+            "depth":3
+        },
+        "position": {
+            "x": 0,
+            "y": 12,
+            "z":0
+        },
+        "name": "Box",
+        "color":"#006622",
+        "texture": "texture",
+        "mass": 27,
+        "angularDamping" :0.6
+        }
+    ],
+    "scoreBoundries":{
+        "1Star":12,
+        "2Star":20,
+        "3Star":25
+    },
+    "additionalObstacles":[
+        
+    ],
+    "additionalLightsources":[
+
+    ]
+}
