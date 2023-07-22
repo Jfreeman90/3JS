@@ -2,6 +2,7 @@
     "level":"1",
     "difficulty": "easy",
     "description":"DESCRIPTION_PLACEHOLDER",
+    "image": "IMAGE_PLACEHOLDER",
     "blockCount": 6,
     "scene":{
         "cameraPosition": {
@@ -20,13 +21,12 @@
             "z":-7
         },
         "ambientLight": true,
-        "gravity" : -9.81,
+        "gravity" : -5.0,
         "timeStep" : 0.016,
-        "background" : "x0FFFFFF",
+        "background" : "#0FFFFFF",
         "weather" :"WEATHER_PLACEHOLDER_INFO"
     },
     "ground": {
-        "mesh": "MESH_PLACEHOLDER",
         "dimensions":{
             "width": 10,
             "height":10,
@@ -56,53 +56,72 @@
         "restitution": 0.2
     },
     "heightChecker":{
-        "mesh":"MESH_PLACEHOLDER",
         "dimensions":{
-            "width": 2,
-            "height": 2,
-            "depth":2
+            "width": 10,
+            "height": 0.1,
+            "depth":10
         },
         "position": {
-            "x": 2,
-            "y": 2,
-            "z":2
+            "x": 0,
+            "y": 20,
+            "z":0
         },
-        "friction":0.1
+        "friction":0.1,
+        "name": "heightChecker",
+        "color": "#004422"
+
     },
     "blocks":[
         {
-        "dimensions":{
-            "width": 2,
-            "height": 2,
-            "depth":2
-        },
-        "position": {
-            "x": 0,
-            "y": 12,
-            "z":0
-        },
-        "name": "Box",
-        "color":"#006600",
-        "texture": "texture",
-        "mass": 8,
-        "angularDamping" :0.8
+            "dimensions":{
+                "width": 3,
+                "height": 3,
+                "depth":3
+            },
+            "position": {
+                "x": 0,
+                "y": 12,
+                "z":0
+            },
+            "name": "Box",
+            "color":"#006622",
+            "texture": "texture",
+            "mass": 27,
+            "angularDamping" :0.6
         },
         {
-        "dimensions":{
-            "width": 3,
-            "height": 3,
-            "depth":3
+            "dimensions":{
+                "width": 2,
+                "height": 2,
+                "depth":2
+            },
+            "position": {
+                "x": 0,
+                "y": 12,
+                "z":0
+            },
+            "name": "Box",
+            "color":"#006600",
+            "texture": "texture",
+            "mass": 8,
+            "angularDamping" :0.8
         },
-        "position": {
-            "x": 0,
-            "y": 12,
-            "z":0
-        },
-        "name": "Box",
-        "color":"#006622",
-        "texture": "texture",
-        "mass": 27,
-        "angularDamping" :0.6
+        {
+            "dimensions":{
+                "width": 6,
+                "height": 1,
+                "depth":2
+            },
+            "position": {
+                "x": 0,
+                "y": 12,
+                "z":0
+            },
+            "name": "Box",
+            "color":"#112122",
+            "texture": "texture",
+            "mass": 12,
+            "angularDamping" :0.6
         }
     ],
     "scoreBoundries":{

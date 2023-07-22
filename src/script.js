@@ -21,6 +21,8 @@ let maxCubesInLevel=2;
 let cubeInPlayYPosition=10;
 //tracks state of clicks to decide if user is holding down
 const mouseHold ={hold: false, mouseDown:false, mouseUp:true}
+//frame count for collision checks instead of every itteration
+let frames=0;
 
 
 // ------------------------------------------------
@@ -90,6 +92,26 @@ const groundBody = new CANNON.Body({
 physicsWorld.addBody(groundBody);
 groundBody.quaternion.setFromEuler(-Math.PI/2, 0, 0);
 
+// ------------------------------------------------
+///                  HEIGHT CHECKER
+//--------------------------------------------------
+const heightCheckerMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(levelData.heightChecker.dimensions.width, levelData.heightChecker.dimensions.height, levelData.heightChecker.dimensions.depth),
+    new THREE.MeshLambertMaterial({color: levelData.heightChecker.color, visible:true}));
+scene.add(heightCheckerMesh);
+//add a bounding box for collision detection
+const heightCheckerBoundingBox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+heightCheckerBoundingBox.setFromObject(heightCheckerMesh); //set min and max values based on the cube
+//Cannon
+const heightCheckerBody = new CANNON.Body({
+    shape: new CANNON.Box(new CANNON.Vec3(levelData.heightChecker.dimensions.width, levelData.heightChecker.dimensions.height, levelData.heightChecker.dimensions.depth)),
+    position: new CANNON.Vec3(levelData.heightChecker.position.x, levelData.heightChecker.position.y, levelData.heightChecker.position.z),
+    material: new CANNON.Material(), //add material to the box to allow friction
+    mass:0,
+    type: CANNON.Body.DYNAMIC
+})
+physicsWorld.addBody(heightCheckerBody);
+
 
 // ------------------------------------------------
 ///                     BOXES
@@ -139,6 +161,8 @@ levelData.blocks.forEach(block => {
 let allBoxesMesh = [playableBoxesMesh[0]];
 let allBoxesBody = [playableBoxesBody[0]];
 let allBoundingBoxes = [playableBoundingBoxes[0]]
+let maxHeight; //scores after each cube
+let heightCheckCollision=false;
 
 
 // ------------------------------------------------
@@ -152,6 +176,11 @@ function animate() {
     groundMesh.position.copy(groundBody.position);
     groundMesh.quaternion.copy(groundBody.quaternion);
 
+    //link up heightChecker
+    heightCheckerMesh.position.copy(heightCheckerBody.position);
+    heightCheckerMesh.quaternion.copy(heightCheckerBody.quaternion);
+    heightCheckerBoundingBox.copy(heightCheckerMesh.geometry.boundingBox).applyMatrix4(heightCheckerMesh.matrixWorld);
+
     //update and draw all of the box objects
     for (let i=0; i<allBoxesMesh.length; i++){
         if(allBoxesMesh[i]){
@@ -162,6 +191,14 @@ function animate() {
             allBoxesMesh[i].position.copy(allBoxesBody[i].position);
             allBoxesMesh[i].quaternion.copy(allBoxesBody[i].quaternion);
             allBoundingBoxes[i].copy(allBoxesMesh[i].geometry.boundingBox).applyMatrix4(allBoxesMesh[i].matrixWorld);
+
+            //check for max height with a collision of that box
+            if (heightCheckerBoundingBox.intersectsBox(allBoundingBoxes[i])){
+                heightCheckCollision=true;
+                maxHeight =heightCheckerMesh.position.y - levelData.heightChecker.dimensions.height*2;
+                //update DOM with max height
+                document.getElementById("Height_score").innerHTML=`HEIGHT: ${Math.round(maxHeight*100)/100}`
+            }   
         }
     }
 
@@ -170,6 +207,7 @@ function animate() {
 
     //update render
     renderer.render(scene, camera);
+
 }
 renderer.setAnimationLoop(animate);
 
@@ -246,17 +284,35 @@ window.addEventListener('keydown', (event)=>{
         //drop the box
         allBoxesBody[currentBoxIndex].mass=2;
         allBoxesBody[currentBoxIndex].updateMassProperties();
-        if (playableBoxesMesh[currentBoxIndex]){
-            //wait for cube to hit floor before spawning next cube with next click
-            if (cubeInPlayYPosition<8){
-                //push the next cube that is playable into the renderedable 3js arrays
-                allBoxesMesh.push(playableBoxesMesh[currentBoxIndex]);
-                allBoxesBody.push(playableBoxesBody[currentBoxIndex]);
-                allBoundingBoxes.push(playableBoundingBoxes[currentBoxIndex]);
-                //update for next box index
-                currentBoxIndex++;
-            }
+        //if (playableBoxesMesh[currentBoxIndex]){
+        if (cubeInPlayYPosition < 8 ){
+            //push the next cube that is playable into the renderedable 3js arrays
+            allBoxesMesh.push(playableBoxesMesh[currentBoxIndex]);
+            allBoxesBody.push(playableBoxesBody[currentBoxIndex]);
+            allBoundingBoxes.push(playableBoundingBoxes[currentBoxIndex]);
+            //update for next box index
+            currentBoxIndex++;
         }
-        
+    }
+
+    // use tab to drop the height checker
+    if (event.code === 'Tab') {
+        heightCheckerBody.mass=0.1;
+        heightCheckerBody.updateMassProperties();   
+    }
+    
+    //reset height chcker
+    if(event.code ==='ShiftRight') {
+        resetHeightChecker();
     }
 })
+
+
+function resetHeightChecker(){
+    //reset height checker position and velocities so it isnt moving
+    heightCheckerBody.position.set(0, levelData.heightChecker.position.y, 0);
+    heightCheckerBody.angularVelocity.set(0,0,0);
+    heightCheckerBody.velocity.set(0,0,0);
+    heightCheckerBody.mass=0.0;
+    heightCheckerBody.updateMassProperties();   
+}
