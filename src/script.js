@@ -7,8 +7,6 @@ import level1Data from "../static/level1Data.json" assert {type: "json"}
 ///                LOAD LEVEL DATA
 //--------------------------------------------------
 const levelData = level1Data;
-
-
 // ------------------------------------------------
 ///            CONSTANTS & VARIABLES
 //--------------------------------------------------
@@ -17,13 +15,9 @@ const PLANE_HEIGHT = levelData.ground.dimensions.height;
 const PLANE_DEPTH = levelData.ground.dimensions.depth;
 // boxes played
 let currentBoxIndex = 0;
-let maxCubesInLevel=2;
 let cubeInPlayYPosition=10;
 //tracks state of clicks to decide if user is holding down
 const mouseHold ={hold: false, mouseDown:false, mouseUp:true}
-//frame count for collision checks instead of every itteration
-let frames=0;
-
 
 // ------------------------------------------------
 ///                     RENDERER
@@ -92,26 +86,6 @@ const groundBody = new CANNON.Body({
 physicsWorld.addBody(groundBody);
 groundBody.quaternion.setFromEuler(-Math.PI/2, 0, 0);
 
-// ------------------------------------------------
-///                  HEIGHT CHECKER
-//--------------------------------------------------
-const heightCheckerMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(levelData.heightChecker.dimensions.width, levelData.heightChecker.dimensions.height, levelData.heightChecker.dimensions.depth),
-    new THREE.MeshLambertMaterial({color: levelData.heightChecker.color, visible:true}));
-scene.add(heightCheckerMesh);
-//add a bounding box for collision detection
-const heightCheckerBoundingBox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
-heightCheckerBoundingBox.setFromObject(heightCheckerMesh); //set min and max values based on the cube
-//Cannon
-const heightCheckerBody = new CANNON.Body({
-    shape: new CANNON.Box(new CANNON.Vec3(levelData.heightChecker.dimensions.width, levelData.heightChecker.dimensions.height, levelData.heightChecker.dimensions.depth)),
-    position: new CANNON.Vec3(levelData.heightChecker.position.x, levelData.heightChecker.position.y, levelData.heightChecker.position.z),
-    material: new CANNON.Material(), //add material to the box to allow friction
-    mass:0,
-    type: CANNON.Body.DYNAMIC
-})
-physicsWorld.addBody(heightCheckerBody);
-
 
 // ------------------------------------------------
 ///                     BOXES
@@ -132,7 +106,7 @@ levelData.blocks.forEach(block => {
     boxMesh.position.set(block.position.x, block.position.y, block.position.z);
     boxMesh.name=block.name;
     boxMesh.castShadow=true;
-    // Three JS Bounding box for heaight checking collision
+    // Three JS Bounding box for height checking collision
     let boxBoundingBox = new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
     boxBoundingBox.setFromObject(boxMesh); //set min and max values based on the cube
     //Cannon JS box body for the physics simulation
@@ -162,24 +136,23 @@ let allBoxesMesh = [playableBoxesMesh[0]];
 let allBoxesBody = [playableBoxesBody[0]];
 let allBoundingBoxes = [playableBoundingBoxes[0]]
 let maxHeight; //scores after each cube
-let heightCheckCollision=false;
+// Array to track if a box has been dropped
+let allBoxesDropped = [false]; // Initialize with the first box not dropped
 
 
 // ------------------------------------------------
 ///               ANIMATION LOOP
 //--------------------------------------------------
 function animate() {
+    // Keep track of highest point without using the height checker
+    let currentMaxHeight = 0;
+
     //Time step
     physicsWorld.step(timeStep);
 
     //link up cannon and threejs for ground mesh
     groundMesh.position.copy(groundBody.position);
     groundMesh.quaternion.copy(groundBody.quaternion);
-
-    //link up heightChecker
-    heightCheckerMesh.position.copy(heightCheckerBody.position);
-    heightCheckerMesh.quaternion.copy(heightCheckerBody.quaternion);
-    heightCheckerBoundingBox.copy(heightCheckerMesh.geometry.boundingBox).applyMatrix4(heightCheckerMesh.matrixWorld);
 
     //update and draw all of the box objects
     for (let i=0; i<allBoxesMesh.length; i++){
@@ -192,16 +165,25 @@ function animate() {
             allBoxesMesh[i].quaternion.copy(allBoxesBody[i].quaternion);
             allBoundingBoxes[i].copy(allBoxesMesh[i].geometry.boundingBox).applyMatrix4(allBoxesMesh[i].matrixWorld);
 
-            //check for max height with a collision of that box
-            if (heightCheckerBoundingBox.intersectsBox(allBoundingBoxes[i])){
-                heightCheckCollision=true;
-                maxHeight =heightCheckerMesh.position.y - levelData.heightChecker.dimensions.height*2;
-                //update DOM with max height
-                document.getElementById("Height_score").innerHTML=`HEIGHT: ${Math.round(maxHeight*100)/100}`
-            }   
+
+            // Check if this box has a higher point than our current max
+            const boxMaxY = allBoundingBoxes[i].max.y;
+            if (boxMaxY > currentMaxHeight) {
+                currentMaxHeight = boxMaxY;
+            }
         }
     }
 
+    // Update max height if it's changed (with adjusted value)
+    const adjustedHeight = currentMaxHeight - PLANE_DEPTH;
+    
+    // Round to 2 decimal places to avoid floating point precision issues
+    const displayHeight = Math.round(adjustedHeight * 100) / 100;
+    
+    // Only update the DOM if the displayed height value has changed
+    if (displayHeight !== parseFloat(document.getElementById("Height_score").textContent.split(": ")[1])) {
+        document.getElementById("Height_score").innerHTML = `HEIGHT: ${displayHeight}`;
+    }
     //update the current box in plays y position
     cubeInPlayYPosition=allBoxesBody[currentBoxIndex].position.y;
 
@@ -242,7 +224,9 @@ window.addEventListener('mousemove', (event) =>{
                     closestObject = object;
                 }
             });
-            if (closestObject.object.name==="Box"){
+            // Check the current box is in play(hasnt began falling yet) and if so it should be intercatable
+            //TODO
+            if (closestObject.object.name==="Box"&& !allBoxesDropped[currentBoxIndex]){
                 // update the 3js rotation
                 let deltaRotationQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(
                   toRadians(directionY * 1),
@@ -256,7 +240,6 @@ window.addEventListener('mousemove', (event) =>{
                 allBoxesBody[currentBoxIndex].quaternion.copy(allBoxesMesh[currentBoxIndex].quaternion);
         }}
     }
-
 });
 
 //mouse down toggle for holding
@@ -281,6 +264,9 @@ function toRadians(angle) {
 //space to turn on gravity - add mass to cannon and begin its fall after rotating
 window.addEventListener('keydown', (event)=>{
     if (event.code === "Space"){
+        // Mark the current box as dropped
+        allBoxesDropped[currentBoxIndex] = true;
+
         //drop the box
         allBoxesBody[currentBoxIndex].mass=2;
         allBoxesBody[currentBoxIndex].updateMassProperties();
@@ -290,29 +276,12 @@ window.addEventListener('keydown', (event)=>{
             allBoxesMesh.push(playableBoxesMesh[currentBoxIndex]);
             allBoxesBody.push(playableBoxesBody[currentBoxIndex]);
             allBoundingBoxes.push(playableBoundingBoxes[currentBoxIndex]);
+
+            // Add to dropped state array for the new box
+            allBoxesDropped.push(false);
+
             //update for next box index
             currentBoxIndex++;
         }
     }
-
-    // use tab to drop the height checker
-    if (event.code === 'Tab') {
-        heightCheckerBody.mass=0.1;
-        heightCheckerBody.updateMassProperties();   
-    }
-    
-    //reset height chcker
-    if(event.code ==='ShiftRight') {
-        resetHeightChecker();
-    }
 })
-
-
-function resetHeightChecker(){
-    //reset height checker position and velocities so it isnt moving
-    heightCheckerBody.position.set(0, levelData.heightChecker.position.y, 0);
-    heightCheckerBody.angularVelocity.set(0,0,0);
-    heightCheckerBody.velocity.set(0,0,0);
-    heightCheckerBody.mass=0.0;
-    heightCheckerBody.updateMassProperties();   
-}
